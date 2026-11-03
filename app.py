@@ -85,4 +85,4 @@ if st.button("Predict Ticket"):
 
 st.divider()
 
-st.caption("Machine Learning Project | TF-IDF and Random Forest")
+st.caption("Machine Learning Project | TF-IDF and Linear SVM")
