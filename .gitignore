@@ -1,0 +1,17 @@
+# Ignore everything
+*!.gitignore
+# Allow required files
+!app.py
+!train.py
+!compare_models.py
+!requirements.txt
+!Dockerfile
+!.dockerignore
+
+# Allow models folder
+!models/
+models/*
+
+# Allow only trained models
+!models/category_model.pkl
+!models/priority_model.pkl
