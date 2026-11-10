@@ -1,88 +1,75 @@
 import streamlit as st
-import pickle
+import requests
 import os
 
-# Page configuration
 st.set_page_config(
     page_title="Customer Support Ticket Classifier",
     page_icon="🎫"
 )
 
-# Model paths
-CATEGORY_MODEL_PATH = "models/category_model.pkl"
-PRIORITY_MODEL_PATH = "models/priority_model.pkl"
+API_URL = os.getenv(
+    "API_URL",
+    "https://customer-support-prediction-system.onrender.com/predict"
+)
 
-# Load trained models
-@st.cache_resource
-def load_models():
+st.markdown("""
+<style>
+.block-container {
+    padding-top: 1.5rem;
+    padding-bottom: 2rem;
+}
+h2 {
+    margin-top: 0rem;
+    padding-top: 0rem;
+}
+</style>
+""", unsafe_allow_html=True)
 
-    with open(CATEGORY_MODEL_PATH, "rb") as file:
-        category_model = pickle.load(file)
-
-    with open(PRIORITY_MODEL_PATH, "rb") as file:
-        priority_model = pickle.load(file)
-
-    return category_model, priority_model
-
-# Check whether models exist
-if not os.path.exists(CATEGORY_MODEL_PATH) or not os.path.exists(PRIORITY_MODEL_PATH):
-
-    st.error("Trained models not found. Please run train.py first.")
-    st.stop()
-
-# Load models
-try:
-    category_model, priority_model = load_models()
-
-except Exception as error:
-    st.error(f"Error loading models: {error}")
-    st.stop()
-
-# Application heading
 st.markdown(
     "<h2 style='font-size: 32px; font-weight: 600;'>"
     "Customer Support Ticket Classification</h2>",
     unsafe_allow_html=True
 )
+
 st.write(
     "Predict the category and priority of customer support tickets using Machine Learning."
 )
 
 st.divider()
 
-# Ticket input
 subject = st.text_input("Ticket Subject")
+body = st.text_area("Ticket Description", height=180)
 
-body = st.text_area(
-    "Ticket Description",
-    height=180
-)
-
-# Prediction
 if st.button("Predict Ticket"):
 
     if not subject.strip() or not body.strip():
-
         st.warning("Please enter both the subject and description.")
 
     else:
-
-        ticket_text = subject.strip() + " " + body.strip()
-
         try:
-            category = category_model.predict([ticket_text])[0]
-            priority = priority_model.predict([ticket_text])[0]
+            response = requests.post(
+                API_URL,
+                json={
+                    "subject": subject,
+                    "body": body,
+                    "model": "svm"
+                },
+                timeout=60
+            )
 
-            st.success("Prediction completed successfully!")
+            if response.ok:
+                result = response.json()
 
-            st.subheader("Prediction Results")
+                st.success("Prediction completed successfully!")
+                st.subheader("Prediction Results")
+                st.write("**Predicted Category:**", result["category"])
+                st.write("**Predicted Priority:**", result["priority"])
 
-            st.write("**Predicted Category:**", category)
-            st.write("**Predicted Priority:**", priority)
+            else:
+                st.error(response.json().get("error", "API request failed"))
 
-        except Exception as error:
-            st.error(f"Prediction failed: {error}")
+        except requests.RequestException as error:
+            st.error(f"Could not connect to prediction API: {error}")
 
 st.divider()
-
 st.caption("Machine Learning Project | TF-IDF and Linear SVM")
